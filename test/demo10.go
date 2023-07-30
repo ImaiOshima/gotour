@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
+	"reflect"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 var block = "package"
@@ -101,8 +104,26 @@ func main() {
 	//testPoint001()
 
 	//测试new函数
-	testNew001()
-	testNew002()
+	//testNew001()
+	//testNew002()
+
+	//测试reflect 反射拿到value 和 type
+	//testReflect001()
+
+	//测试reflect 反射的重新设置值
+	//testReflect002()
+
+	//测试reflect 反射的接口设置
+	//testReflect003()
+
+	//测试 反射方法调用
+	//testMethod001()
+
+	//测试unsafe 指针转换
+	//testUnsafe001()
+
+	//测试 uintptr 指针转换 主要为了地址相加使用
+	testUintptr001()
 }
 
 func test001() {
@@ -447,4 +468,65 @@ func testNew002() {
 	sp = new(string)
 	*sp = "wyh"
 	fmt.Println(*sp)
+}
+
+func testReflect001() {
+	i := 3
+	iv := reflect.ValueOf(i)
+	i1 := iv.Interface().(int)
+	fmt.Println(i1)
+}
+
+func testReflect002() {
+	i := 3
+	iv := reflect.ValueOf(&i)
+	iv.Elem().SetInt(4)
+	fmt.Println(i)
+}
+
+type person1 struct {
+	Name string
+	Age  int
+}
+
+func testReflect003() {
+	p := person1{Name: "飞雪无情", Age: 20}
+	pt := reflect.TypeOf(p)
+	stringType := reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
+	writeType := reflect.TypeOf((*io.Writer)(nil)).Elem()
+	fmt.Println("is string ", pt.Implements(stringType))
+	fmt.Println("is io ", pt.Implements(writeType))
+}
+
+func (p person1) String() string {
+	return fmt.Sprintf("this is person name %s,age %d", p.Name, p.Age)
+}
+
+func (p person1) Print(s string) {
+	fmt.Printf("%s, name %s,age %d", s, p.Name, p.Age)
+}
+
+func testMethod001() {
+	p := person1{Name: "wyh", Age: 18}
+	pv := reflect.ValueOf(p)
+	mPrint := pv.MethodByName("Print")
+	args := []reflect.Value{reflect.ValueOf("登录")}
+	mPrint.Call(args)
+}
+
+func testUnsafe001() {
+	i := 1
+	ip := &i
+	fp := (*float64)(unsafe.Pointer(ip))
+	*fp = *fp * 3
+	fmt.Println(i)
+}
+
+func testUintptr001() {
+	p := new(person)
+	pName := (*string)(unsafe.Pointer(p))
+	*pName = "wyh"
+	pAge := (*int)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + unsafe.Offsetof(p.age)))
+	*pAge = 18
+	fmt.Println(*p)
 }
